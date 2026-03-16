@@ -24,6 +24,9 @@ function App() {
     return (localStorage.getItem("jetton_view_mode") as 'radio' | 'digital') || 'radio';
   });
 
+  // 默认服务器配置
+  const DEFAULT_SERVER_URL = "http://101.126.54.134:18080/status?token=8ntaZy2ERLjHI8Gmj1MZmA";
+
   // 获取保存的配置
   useEffect(() => {
     const loadConfig = async () => {
@@ -32,17 +35,17 @@ function App() {
         if (savedUrl) {
           setDataUrl(savedUrl);
         } else {
-          const localUrl = localStorage.getItem("jetton_data_url") || "";
-          if (localUrl) {
-            setDataUrl(localUrl);
-            await invoke("save_data_url", { url: localUrl });
-          } else {
-            setShowConfig(true);
+          const localUrl = localStorage.getItem("jetton_data_url") || DEFAULT_SERVER_URL;
+          setDataUrl(localUrl);
+          await invoke("save_data_url", { url: localUrl });
+          if (localUrl === DEFAULT_SERVER_URL) {
+            // 使用默认配置，不需要显示配置面板
+            console.log("Using default server configuration");
           }
         }
       } catch (e) {
         console.error("Failed to load config:", e);
-        setShowConfig(true);
+        setDataUrl(DEFAULT_SERVER_URL);
       }
     };
     loadConfig();

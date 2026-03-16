@@ -49,11 +49,11 @@ export default function ConfigPanel({
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://your-site.com/status-data.json"
+            placeholder="http://101.126.54.134:18080/status?token=YOUR_TOKEN"
             required
           />
           <small>
-            你的监控数据 JSON 端点地址
+            Jetton Monitor 服务器地址（已预填）
             {suggestedName && ` · 将显示为 "${suggestedName}"`}
           </small>
         </div>
@@ -71,19 +71,19 @@ export default function ConfigPanel({
       </form>
 
       <div className="config-help">
-        <h4>📖 如何获取数据 URL?</h4>
+        <h4>📖 配置说明</h4>
         <div className="help-options">
           <div className="help-option">
-            <strong>GitHub Pages</strong>
-            <p>定时脚本推送 JSON 到 GitHub Pages</p>
+            <strong>✅ 已配置服务器</strong>
+            <p>默认连接到 101.126.54.134:18080，无需额外配置</p>
           </div>
           <div className="help-option">
-            <strong>本地服务器</strong>
-            <p>python -m http.server 8080</p>
+            <strong>🔧 自定义服务器</strong>
+            <p>如果你有其他 Jetton Monitor 实例，可修改 URL</p>
           </div>
           <div className="help-option">
-            <strong>OpenClaw 插件</strong>
-            <p>内置状态 API 端点（未来支持）</p>
+            <strong>🌐 本地部署</strong>
+            <p>在本地运行 api_server_v2.py 并使用 localhost 地址</p>
           </div>
         </div>
       </div>
