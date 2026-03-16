@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import StatusCard from "./components/StatusCard";
+import DigitalGauge from "./components/DigitalGauge";
 import TaskQueue from "./components/TaskQueue";
 import HistoryChart from "./components/HistoryChart";
 import ConfigPanel from "./components/ConfigPanel";
@@ -17,6 +18,11 @@ function App() {
   const [showConfig, setShowConfig] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [latency, setLatency] = useState(0);
+  
+  // 视图模式: 'radio' | 'digital'
+  const [viewMode, setViewMode] = useState<'radio' | 'digital'>(() => {
+    return (localStorage.getItem("jetton_view_mode") as 'radio' | 'digital') || 'radio';
+  });
 
   // 获取保存的配置
   useEffect(() => {
@@ -26,7 +32,6 @@ function App() {
         if (savedUrl) {
           setDataUrl(savedUrl);
         } else {
-          // 尝试从 localStorage 读取
           const localUrl = localStorage.getItem("jetton_data_url") || "";
           if (localUrl) {
             setDataUrl(localUrl);
@@ -81,7 +86,7 @@ function App() {
     if (!dataUrl) return;
 
     fetchData();
-    const interval = setInterval(fetchData, 30000); // 30秒刷新
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [dataUrl, fetchData]);
 
@@ -93,17 +98,33 @@ function App() {
     await invoke("save_data_url", { url });
   };
 
+  // 切换视图模式
+  const toggleViewMode = () => {
+    const newMode = viewMode === 'radio' ? 'digital' : 'radio';
+    setViewMode(newMode);
+    localStorage.setItem("jetton_view_mode", newMode);
+  };
+
   return (
     <div className="app">
       <header className="header">
         <div className="header-left">
-          <div className="logo">📻</div>
+          <div className="logo">{viewMode === 'radio' ? '📻' : '💻'}</div>
           <div className="title">
             <h1>Jetton Monitor</h1>
-            <p>认知负载监控</p>
+            <p>{viewMode === 'radio' ? '认知负载监控' : '数字监控'}</p>
           </div>
         </div>
         <div className="header-right">
+          {!showConfig && (
+            <button
+              className="btn-icon"
+              onClick={toggleViewMode}
+              title={viewMode === 'radio' ? '切换到数字模式' : '切换到收音机模式'}
+            >
+              {viewMode === 'radio' ? '💻' : '📻'}
+            </button>
+          )}
           <button
             className="btn-icon"
             onClick={() => setShowConfig(!showConfig)}
@@ -138,11 +159,18 @@ function App() {
               </div>
             )}
 
-            <StatusCard
-              data={data}
-              loading={loading}
-              latency={latency}
-            />
+            {viewMode === 'radio' ? (
+              <StatusCard
+                data={data}
+                loading={loading}
+                latency={latency}
+              />
+            ) : (
+              <DigitalGauge
+                data={data}
+                loading={loading}
+              />
+            )}
 
             <MetricsGrid data={data} />
 
@@ -161,6 +189,8 @@ function App() {
                 💓 最后更新: {lastUpdate.toLocaleTimeString("zh-CN")} 
                 {" · "}
                 延迟: {latency}ms
+                {" · "}
+                模式: {viewMode === 'radio' ? '收音机' : '数字'}
                 {data && (
                   <>
                     {" · "}
