@@ -53,73 +53,51 @@ pub struct HistoryPoint {
     pub tokens: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpstashConfig {
-    pub url: String,
-    pub token: String,
-}
-
 // 应用状态
 pub struct AppState {
-    pub config: Arc<Mutex<UpstashConfig>>,
+    pub data_url: Arc<Mutex<String>>,
     pub last_data: Arc<Mutex<Option<CognitiveData>>>,
 }
 
 impl AppState {
     pub fn new() -> Self {
         Self {
-            config: Arc::new(Mutex::new(UpstashConfig {
-                url: String::new(),
-                token: String::new(),
-            })),
+            data_url: Arc::new(Mutex::new(String::new())),
             last_data: Arc::new(Mutex::new(None)),
         }
     }
 }
 
-// 获取认知数据
+// 获取认知数据 - 极简 HTTP GET
 #[tauri::command]
 async fn fetch_cognitive_data(
     state: State<'_, AppState>,
     url: String,
-    token: String,
 ) -> Result<CognitiveData, String> {
     // 更新配置
     {
-        let mut config = state.config.lock().map_err(|e| e.to_string())?;
-        config.url = url.clone();
-        config.token = token.clone();
+        let mut data_url = state.data_url.lock().map_err(|e| e.to_string())?;
+        *data_url = url.clone();
     }
 
-    // 构建请求
+    // 直接 HTTP GET JSON
     let client = reqwest::Client::new();
-    let request_url = format!("{}/get/cognitive.json", url);
-
+    
     let response = client
-        .get(&request_url)
-        .header("Authorization", format!("Bearer {}", token))
+        .get(&url)
         .timeout(std::time::Duration::from_secs(10))
         .send()
         .await
-        .map_err(|e| format!("Request failed: {}", e))?;
+        .map_err(|e| format!("请求失败: {}", e))?;
 
     if !response.status().is_success() {
-        return Err(format!("HTTP error: {}", response.status()));
+        return Err(format!("HTTP 错误: {}", response.status()));
     }
 
-    let data: serde_json::Value = response
+    let cognitive_data: CognitiveData = response
         .json()
         .await
-        .map_err(|e| format!("JSON parse failed: {}", e))?;
-
-    // 解析数据
-    let result = data
-        .get("result")
-        .and_then(|r| r.as_str())
-        .ok_or("No result field")?;
-
-    let cognitive_data: CognitiveData =
-        serde_json::from_str(result).map_err(|e| format!("Parse cognitive data failed: {}", e))?;
+        .map_err(|e| format!("JSON 解析失败: {}", e))?;
 
     // 保存数据
     {
@@ -130,22 +108,18 @@ async fn fetch_cognitive_data(
     Ok(cognitive_data)
 }
 
-// 获取保存的配置
+// 获取保存的数据 URL
 #[tauri::command]
-fn get_config(state: State<'_, AppState>) -> Result<UpstashConfig, String> {
-    let config = state.config.lock().map_err(|e| e.to_string())?;
-    Ok(UpstashConfig {
-        url: config.url.clone(),
-        token: config.token.clone(),
-    })
+fn get_data_url(state: State<'_, AppState>) -> Result<String, String> {
+    let url = state.data_url.lock().map_err(|e| e.to_string())?;
+    Ok(url.clone())
 }
 
-// 保存配置
+// 保存数据 URL
 #[tauri::command]
-fn save_config(state: State<'_, AppState>, url: String, token: String) -> Result<(), String> {
-    let mut config = state.config.lock().map_err(|e| e.to_string())?;
-    config.url = url;
-    config.token = token;
+fn save_data_url(state: State<'_, AppState>, url: String) -> Result<(), String> {
+    let mut data_url = state.data_url.lock().map_err(|e| e.to_string())?;
+    *data_url = url;
     Ok(())
 }
 
@@ -173,7 +147,7 @@ fn create_tray<R: Runtime>(app: &AppHandle<R>) -> Result<(), Box<dyn std::error:
 
     let menu = Menu::with_items(app, &[&show_i, &hide_i, &refresh_i, &quit_i])?;
 
-    let tray = TrayIconBuilder::new()
+    let _tray = TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
         .menu_on_left_click(false)
@@ -211,8 +185,8 @@ pub fn run() {
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
             fetch_cognitive_data,
-            get_config,
-            save_config
+            get_data_url,
+            save_data_url
         ])
         .setup(|app| {
             // 创建系统托盘

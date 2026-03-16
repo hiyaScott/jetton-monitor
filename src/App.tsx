@@ -13,7 +13,7 @@ function App() {
   const [data, setData] = useState<CognitiveData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [config, setConfig] = useState({ url: "", token: "" });
+  const [dataUrl, setDataUrl] = useState("");
   const [showConfig, setShowConfig] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [latency, setLatency] = useState(0);
@@ -22,16 +22,15 @@ function App() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const savedConfig = await invoke<{ url: string; token: string }>("get_config");
-        if (savedConfig.url && savedConfig.token) {
-          setConfig(savedConfig);
+        const savedUrl = await invoke<string>("get_data_url");
+        if (savedUrl) {
+          setDataUrl(savedUrl);
         } else {
           // 尝试从 localStorage 读取
-          const localUrl = localStorage.getItem("upstash_url") || "";
-          const localToken = localStorage.getItem("upstash_token") || "";
-          if (localUrl && localToken) {
-            setConfig({ url: localUrl, token: localToken });
-            await invoke("save_config", { url: localUrl, token: localToken });
+          const localUrl = localStorage.getItem("jetton_data_url") || "";
+          if (localUrl) {
+            setDataUrl(localUrl);
+            await invoke("save_data_url", { url: localUrl });
           } else {
             setShowConfig(true);
           }
@@ -46,7 +45,7 @@ function App() {
 
   // 获取数据
   const fetchData = useCallback(async () => {
-    if (!config.url || !config.token) return;
+    if (!dataUrl) return;
 
     setLoading(true);
     setError(null);
@@ -54,8 +53,7 @@ function App() {
 
     try {
       const result = await invoke<CognitiveData>("fetch_cognitive_data", {
-        url: config.url,
-        token: config.token,
+        url: dataUrl,
       });
       setData(result);
       setLastUpdate(new Date());
@@ -66,7 +64,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [config]);
+  }, [dataUrl]);
 
   // 监听托盘刷新事件
   useEffect(() => {
@@ -80,30 +78,29 @@ function App() {
 
   // 定期刷新数据
   useEffect(() => {
-    if (!config.url || !config.token) return;
+    if (!dataUrl) return;
 
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 30000); // 30秒刷新
     return () => clearInterval(interval);
-  }, [config, fetchData]);
+  }, [dataUrl, fetchData]);
 
   // 保存配置
-  const handleSaveConfig = async (url: string, token: string) => {
-    localStorage.setItem("upstash_url", url);
-    localStorage.setItem("upstash_token", token);
-    setConfig({ url, token });
+  const handleSaveConfig = async (url: string) => {
+    localStorage.setItem("jetton_data_url", url);
+    setDataUrl(url);
     setShowConfig(false);
-    await invoke("save_config", { url, token });
+    await invoke("save_data_url", { url });
   };
 
   return (
     <div className="app">
       <header className="header">
         <div className="header-left">
-          <div className="logo">❤️‍🔥</div>
+          <div className="logo">📻</div>
           <div className="title">
             <h1>Jetton Monitor</h1>
-            <p>认知负载监控系统</p>
+            <p>认知负载监控</p>
           </div>
         </div>
         <div className="header-right">
@@ -128,10 +125,9 @@ function App() {
       <main className="main">
         {showConfig ? (
           <ConfigPanel
-            initialUrl={config.url}
-            initialToken={config.token}
+            initialUrl={dataUrl}
             onSave={handleSaveConfig}
-            onCancel={() => setShowConfig(false)}
+            onCancel={dataUrl ? () => setShowConfig(false) : undefined}
           />
         ) : (
           <>
@@ -156,22 +152,19 @@ function App() {
                 title="5分钟趋势"
                 color="#22c55e"
               />
-              <HistoryChart
-                data={data?.history_15m || []}
-                title="15分钟趋势"
-                color="#3b82f6"
-              />
             </div>
 
             <TaskQueue tasks={data?.task_queue || []} />
 
             {lastUpdate && (
               <div className="footer">
-                最后更新: {lastUpdate.toLocaleTimeString("zh-CN")} | 延迟: {latency}ms
+                💓 最后更新: {lastUpdate.toLocaleTimeString("zh-CN")} 
+                {" · "}
+                延迟: {latency}ms
                 {data && (
                   <>
-                    {" "}| 监控运行: {formatDuration(data.monitor_uptime)}
-                    {" "}| 算法: {data.algorithm_name} v{data.algorithm_version}
+                    {" · "}
+                    评分: {data.cognitive_score}%
                   </>
                 )}
               </div>
@@ -181,12 +174,6 @@ function App() {
       </main>
     </div>
   );
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
 
 export default App;
