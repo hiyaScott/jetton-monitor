@@ -91,7 +91,7 @@ function App() {
   }, [dataUrl, fetchData]);
 
   // 保存配置
-  const handleSaveConfig = async (url: string) => {
+  const handleSaveConfig = async (url: string, _token?: string) => {
     localStorage.setItem("jetton_data_url", url);
     setDataUrl(url);
     setShowConfig(false);

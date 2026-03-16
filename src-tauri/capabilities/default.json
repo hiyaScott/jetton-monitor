@@ -12,6 +12,6 @@
     "opener:default",
     "http:default",
     "notification:default",
-    "tray:default"
+    "core:tray:default"
   ]
 }

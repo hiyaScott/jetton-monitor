@@ -3,89 +3,89 @@ import "./ConfigPanel.css";
 
 interface ConfigPanelProps {
   initialUrl: string;
-  initialToken: string;
-  onSave: (url: string, token: string) => void;
-  onCancel: () => void;
+  onSave: (url: string) => void;
+  onCancel?: () => void;
 }
 
 export default function ConfigPanel({
   initialUrl,
-  initialToken,
   onSave,
   onCancel
 }: ConfigPanelProps) {
   const [url, setUrl] = useState(initialUrl);
-  const [token, setToken] = useState(initialToken);
-  const [showToken, setShowToken] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (url.trim() && token.trim()) {
-      onSave(url.trim(), token.trim());
+    if (url.trim()) {
+      onSave(url.trim());
     }
   };
+
+  // 从URL自动提取名称示例
+  const getSuggestedName = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.replace(/^www\./, '').split('.')[0];
+    } catch {
+      return '';
+    }
+  };
+
+  const suggestedName = getSuggestedName(url);
 
   return (
     <div className="config-panel">
       <div className="config-header">
-        <h2>🔧 配置 Upstash Redis</h2>
-        <p>请输入您的 Upstash Redis REST API 凭证</p>
+        <div className="config-logo">📻</div>
+        <h2>欢迎使用 Jetton Monitor</h2>
+        <p>像查看 CPU 一样了解你的 AI 助手状态</p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="config-field">
-          <label htmlFor="upstash-url">Redis REST URL</label>
+          <label htmlFor="data-url">数据 URL</label>
           <input
-            id="upstash-url"
-            type="text"
+            id="data-url"
+            type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://xxx.upstash.io"
+            placeholder="https://your-site.com/status-data.json"
             required
           />
-          <small>例如: https://singular-snake-71209.upstash.io</small>
-        </div>
-
-        <div className="config-field">
-          <label htmlFor="upstash-token">Redis REST Token</label>
-          <div className="token-input-wrapper">
-            <input
-              id="upstash-token"
-              type={showToken ? "text" : "password"}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="输入您的 REST Token"
-              required
-            />
-            <button
-              type="button"
-              className="toggle-visibility"
-              onClick={() => setShowToken(!showToken)}
-            >
-              {showToken ? "🙈" : "👁️"}
-            </button>
-          </div>
-          <small>从 Upstash Console 获取的 REST API Token</small>
+          <small>
+            你的监控数据 JSON 端点地址
+            {suggestedName && ` · 将显示为 "${suggestedName}"`}
+          </small>
         </div>
 
         <div className="config-actions">
-          <button type="button" className="btn-secondary" onClick={onCancel}>
-            取消
+          <button type="submit" className="btn-primary btn-large">
+            🚀 开始监控
           </button>
-          <button type="submit" className="btn-primary">
-            保存并连接
-          </button>
+          {onCancel && (
+            <button type="button" className="btn-secondary" onClick={onCancel}>
+              取消
+            </button>
+          )}
         </div>
       </form>
 
       <div className="config-help">
-        <h4>📖 如何获取凭证?</h4>
-        <ol>
-          <li>登录 Upstash Console (https://console.upstash.com)</li>
-          <li>选择或创建一个 Redis 数据库</li>
-          <li>进入 "REST API" 选项卡</li>
-          <li>复制 URL 和 Token</li>
-        </ol>
+        <h4>📖 如何获取数据 URL?</h4>
+        <div className="help-options">
+          <div className="help-option">
+            <strong>GitHub Pages</strong>
+            <p>定时脚本推送 JSON 到 GitHub Pages</p>
+          </div>
+          <div className="help-option">
+            <strong>本地服务器</strong>
+            <p>python -m http.server 8080</p>
+          </div>
+          <div className="help-option">
+            <strong>OpenClaw 插件</strong>
+            <p>内置状态 API 端点（未来支持）</p>
+          </div>
+        </div>
       </div>
     </div>
   );
