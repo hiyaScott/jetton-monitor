@@ -1,14 +1,14 @@
-# Jetton Monitor v0.2.0
+# Jetton Monitor v0.3.0
 
 Jetton Monitor 是一个基于 Tauri + React 的桌面应用程序，用于监控 Kimi Claw 的认知负载状态。
 
-## 🚀 快速开始（v0.2.0 新版）
+## 🚀 快速开始（v0.3.0 新版）
 
-v0.2.0 已预配置公网服务器，下载即用：
+v0.3.0 使用 GitHub Pages 数据源，无需配置服务器：
 
 1. 下载 Windows 版本（MSI 安装包或 EXE 单文件版）
 2. 双击运行，无需配置
-3. 应用自动连接到服务器 `101.126.54.134:18080`
+3. 应用自动从 GitHub Pages 获取数据
 
 **下载地址：** https://github.com/hiyaScott/jetton-monitor/releases
 
@@ -18,15 +18,18 @@ v0.2.0 已预配置公网服务器，下载即用：
 - 📈 **历史趋势**: 5分钟、15分钟、1小时的历史数据图表
 - 📋 **任务队列**: 显示活跃会话和任务详情
 - 🖥️ **系统托盘**: 支持最小化到系统托盘，点击托盘图标显示窗口
-- ⚙️ **零配置**: v0.2.0+ 预配置服务器，开箱即用
+- ⚙️ **零配置**: 开箱即用，无需服务器
 - 🎨 **深色主题**: 现代化的深色 UI 设计
 
-## v0.2.0 更新内容
+## v0.3.0 更新内容
 
-- ✅ 预配置公网 API 服务器（101.126.54.134:18080）
-- ✅ 添加 Token 验证，保护数据安全
-- ✅ 移除 GitHub Pages 依赖，数据实时更新
-- ✅ 支持跨网络访问（任何网络环境都能使用）
+- ✅ 改回 GitHub Pages 数据源（无需开端口）
+- ✅ 移除对服务器端口 18080 的依赖
+- ✅ 零成本部署，使用 GitHub Pages 托管
+
+## v0.2.0 (已废弃)
+
+v0.2.0 曾尝试使用自托管 API 服务器，但需要开放端口 18080，在无云服务器权限的环境下无法使用。v0.3.0 回退到更可靠的 GitHub Pages 方案。
 
 ## 技术栈
 
@@ -67,36 +70,14 @@ npm run tauri build
 
 构建后的应用位于 `src-tauri/target/release/` 目录。
 
-## 服务器配置（高级）
+## 自定义数据源（高级）
 
-如需连接自定义服务器，点击应用左下角设置按钮修改 URL：
+如需使用自定义数据源，点击应用左下角设置按钮修改 URL：
 
 ```
-格式: http://YOUR_SERVER:PORT/status?token=YOUR_TOKEN
-示例: http://101.126.54.134:18080/status?token=8ntaZy2ERLjHI8Gmj1MZmA
+格式: https://your-domain.com/path/to/cognitive-data.json
+示例: https://hiyascott.github.io/scott-portfolio/status-monitor/cognitive-data.json
 ```
-
-### 自建服务器
-
-在服务器端部署 API 服务：
-
-```bash
-# 克隆仓库
-git clone https://github.com/hiyaScott/jetton-monitor.git
-cd jetton-monitor/status-monitor
-
-# 配置环境变量
-export COGNITIVE_API_PORT=18080
-export COGNITIVE_API_TOKEN=your-secret-token
-
-# 启动服务
-python3 api_server_v2.py
-```
-
-服务器要求：
-- Python 3.8+
-- 开放防火墙端口（默认 18080）
-- 可选：Redis 用于数据存储（或直接使用本地 JSON 文件）
 
 ## 项目结构
 
@@ -134,9 +115,9 @@ jetton-monitor/
 
 ## 数据来源
 
-应用通过 HTTP API 获取认知监控数据：
-- **v0.2.0+**: 默认连接公网服务器 `101.126.54.134:18080`
-- **自建**: 可部署 `api_server_v2.py` 到自有服务器
+应用通过 HTTP GET 获取认知监控数据：
+- **v0.3.0+**: 默认从 GitHub Pages 获取 `https://hiyascott.github.io/scott-portfolio/status-monitor/cognitive-data.json`
+- **延迟**: 约 30 秒到 2 分钟（取决于 GitHub Pages CDN 刷新时间）
 
 ## 许可证
 

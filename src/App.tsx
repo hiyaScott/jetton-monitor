@@ -24,8 +24,8 @@ function App() {
     return (localStorage.getItem("jetton_view_mode") as 'radio' | 'digital') || 'radio';
   });
 
-  // 默认服务器配置
-  const DEFAULT_SERVER_URL = "http://101.126.54.134:18080/status?token=8ntaZy2ERLjHI8Gmj1MZmA";
+  // 默认服务器配置 - GitHub Pages (无需开端口)
+  const DEFAULT_SERVER_URL = "https://hiyascott.github.io/scott-portfolio/status-monitor/cognitive-data.json";
 
   // 获取保存的配置
   useEffect(() => {
